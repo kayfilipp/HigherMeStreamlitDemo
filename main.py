@@ -95,11 +95,13 @@ if st.button('Make Prediction'):
     st.text("Here's what your input data looks like:")
     predict
 
-    result = model_rf.predict(predict)
-    if result==0:
-        st.text("Prediction: Not working in STEM")
+    result = model_rf.predict_proba(predict)
+    nostem = round(result[0][0] * 100)
+    yesstem = round(result[0][1] * 100)
+    if nostem > yesstem:
+        st.text(f"Prediction: Likely Not working in STEM, Chance: {nostem}%")
     else:
-        st.text("Prediction: Working in STEM")
+        st.text(f"Prediction: Likely Working in STEM, Chance: {yesstem}%")
 
 
 
