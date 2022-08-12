@@ -3,10 +3,8 @@ import pandas as pd
 import numpy as np
 from io import BytesIO
 import pickle
-import time
 import requests
-
-PICKLE_FILE_NAME = 'rf_model.pkl'
+import rf_load
 
 st.header("HigherME Stem Placement Prediction App")
 st.write("This MVP provides demo functionality to see if an individual is likely to land a job in a STEM field.")
@@ -14,38 +12,28 @@ st.write("This MVP provides demo functionality to see if an individual is likely
 intro_screen = st.empty()
 intro_screen.text("Loading Random Forest Model...")
 
-try:
-    model_rf = pickle.load(open(PICKLE_FILE_NAME, 'rb'))
-    print('loaded model from local.')
-except:
-    mLink = 'https://raw.githubusercontent.com/kayfilipp/HigherME/main/census_data/model_export/finalized_rf_model.pkl?raw=true'
-    mfile = BytesIO(requests.get(mLink).content)
-    model_rf = pickle.load(mfile)
-    pickle.dump(model_rf, open(PICKLE_FILE_NAME, 'wb'))
-    print('loaded model from repo.')
-finally:
-    time.sleep(2)
-    intro_screen.text("Successfully loaded model!")
-    time.sleep(2)
-    intro_screen.empty()
-    del intro_screen
+#see rf_load.py => check our session state for an RF model and reload it if we're missing one.
+#this reduces processing time.
+rf_load.main(st)
 
+intro_screen.empty()
 
-data = pd.read_csv("https://raw.githubusercontent.com/kayfilipp/HigherME/main/census_data/streamlit/data.csv")
-mu = data["AGE"].mean()
-sigma = data["AGE"].std()
+#load data.csv
+rf_load.main_data(st)
+mu = st.session_state['data']["AGE"].mean()
+sigma = st.session_state['data']["AGE"].std()
 
 #to ensure consistency with training data, we need to sort this alphabetically
-edus = np.array(data["EDU_verbose"].unique())
+edus = np.array(st.session_state['data']["EDU_verbose"].unique())
 edus.sort()
 edus = list(edus)
 
-degree_areas = np.array(data["STEM_Degree_Area"].unique())
+degree_areas = np.array(st.session_state['data']["STEM_Degree_Area"].unique())
 degree_areas.sort()
 degree_areas = list(degree_areas)
 
 if st.checkbox('Show Training Dataframe sample'):
-    data[0:10]
+    st.session_state['data'][0:10]
 
 # load model - Random Forest
 deployed_svm_model = 0
@@ -63,23 +51,35 @@ with left_column:
         ['yes','no']
     )
 
-with right_column:
-    inp_edu_level = st.radio(
-        'What is the highest educational attainment for the individual?',
-        edus
-    )
-
-    inp_is_STEM = st.radio(
-        'Does the Individual have a STEM degree?',
-        ['yes','no'],
-        index=1
-    )
-
-with left_column:
     inp_under_represented = st.radio(
         'Is the individual from an under-represented\n racial background?',
         ['yes','no']
     )
+
+with right_column:
+    inp_edu_level = st.selectbox(
+        'What is the highest educational attainment for the individual?',
+        edus
+    )
+
+    if inp_edu_level not in ['None/Below HS', 'High School']:
+        inp_is_STEM = st.radio(
+            'Does the Individual have a STEM degree?',
+            ['yes','no'],
+            index=1
+        )
+    else:
+        inp_is_STEM = 'no'
+
+    if inp_is_STEM == 'yes' and inp_edu_level not in ['None/Below HS', 'High School']:
+        inp_deg_area = st.selectbox(
+            "STEM Degree Concentration"
+            , degree_areas
+        )
+    else:
+        inp_deg_area = 'None'
+
+
 
 def converter_func(radio):
     if radio=='yes' or radio=='Female':
@@ -88,17 +88,12 @@ def converter_func(radio):
 
 inp_age = st.slider(
     'Age (Yrs)'
-    , min_value= min(data["AGE"])
-    , max_value= max(data["AGE"])
+    , min_value= min(st.session_state['data']["AGE"])
+    , max_value= max(st.session_state['data']["AGE"])
     , step=1
 )
-if inp_is_STEM == 'yes':
-    inp_deg_area = st.radio(
-        "STEM Degree Concentration"
-        , degree_areas
-    )
-else:
-    inp_deg_area = 'None'
+
+
 
 if st.button('Make Prediction'):
 
@@ -133,7 +128,7 @@ if st.button('Make Prediction'):
     st.text("Here's what your input data looks like:")
     predict
 
-    result = model_rf.predict_proba(predict)
+    result = st.session_state['model_rf'].predict_proba(predict)
     nostem = round(result[0][0] * 100)
     yesstem = round(result[0][1] * 100)
     if nostem > yesstem:
