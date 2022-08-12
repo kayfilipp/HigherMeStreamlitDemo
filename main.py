@@ -108,18 +108,20 @@ if st.button('Make Prediction'):
     instance["domestic_born"] = [converter_func(inp_domestic_born)]
     instance["is_STEM_degree"] = [converter_func(inp_is_STEM)]
     instance["under_represented"] = [converter_func(inp_under_represented)]
-    #Dummies for education
-    for edu in edus:
-        this_key = f"EDU_verbose_{edu}"
-        if inp_edu_level == edu:
-            instance[this_key] = [1]
-        else:
-            instance[this_key] = [0]
+
 
     #Dummies for degree area
     for deg in degree_areas:
         this_key = f"STEM_Degree_Area_{deg}"
         if inp_deg_area == deg:
+            instance[this_key] = [1]
+        else:
+            instance[this_key] = [0]
+
+    #Dummies for education
+    for edu in edus:
+        this_key = f"EDU_verbose_{edu}"
+        if inp_edu_level == edu:
             instance[this_key] = [1]
         else:
             instance[this_key] = [0]
