@@ -3,14 +3,34 @@ import pandas as pd
 import numpy as np
 from io import BytesIO
 import pickle
+import time
 import requests
 
-mLink = 'https://raw.githubusercontent.com/kayfilipp/HigherME/main/census_data/finalized_rf_model.pkl?raw=true'
-mfile = BytesIO(requests.get(mLink).content)
-model_rf = pickle.load(mfile)
+PICKLE_FILE_NAME = 'rf_model.pkl'
 
 st.header("HigherME Stem Placement Prediction App")
 st.write("This MVP provides demo functionality to see if an individual is likely to land a job in a STEM field.")
+
+intro_screen = st.empty()
+intro_screen.text("Loading Random Forest Model...")
+
+try:
+    model_rf = pickle.load(open(PICKLE_FILE_NAME, 'rb'))
+    print('loaded model from local.')
+except:
+    mLink = 'https://raw.githubusercontent.com/kayfilipp/HigherME/main/census_data/model_export/finalized_rf_model.pkl?raw=true'
+    mfile = BytesIO(requests.get(mLink).content)
+    model_rf = pickle.load(mfile)
+    pickle.dump(model_rf, open(PICKLE_FILE_NAME, 'wb'))
+    print('loaded model from repo.')
+finally:
+    time.sleep(2)
+    intro_screen.text("Successfully loaded model!")
+    time.sleep(2)
+    intro_screen.empty()
+    del intro_screen
+
+
 data = pd.read_csv("https://raw.githubusercontent.com/kayfilipp/HigherME/main/census_data/streamlit/data.csv")
 mu = data["AGE"].mean()
 sigma = data["AGE"].std()
@@ -19,6 +39,10 @@ sigma = data["AGE"].std()
 edus = np.array(data["EDU_verbose"].unique())
 edus.sort()
 edus = list(edus)
+
+degree_areas = np.array(data["STEM_Degree_Area"].unique())
+degree_areas.sort()
+degree_areas = list(degree_areas)
 
 if st.checkbox('Show Training Dataframe sample'):
     data[0:10]
@@ -47,7 +71,8 @@ with right_column:
 
     inp_is_STEM = st.radio(
         'Does the Individual have a STEM degree?',
-        ['yes','no']
+        ['yes','no'],
+        index=1
     )
 
 with left_column:
@@ -67,13 +92,18 @@ inp_age = st.slider(
     , max_value= max(data["AGE"])
     , step=1
 )
+if inp_is_STEM == 'yes':
+    inp_deg_area = st.radio(
+        "STEM Degree Concentration"
+        , degree_areas
+    )
+else:
+    inp_deg_area = 'None'
 
 if st.button('Make Prediction'):
 
     #make an empty dictionary object that we'll turn into a dataframe for prediction.
     instance = {}
-
-
 
     #binarize all other inputs
     instance["SEX"] = [converter_func(inp_sex)]
@@ -87,6 +117,14 @@ if st.button('Make Prediction'):
     for edu in edus:
         this_key = f"EDU_verbose_{edu}"
         if inp_edu_level == edu:
+            instance[this_key] = [1]
+        else:
+            instance[this_key] = [0]
+
+    #Dummies for degree area
+    for deg in degree_areas:
+        this_key = f"STEM_Degree_Area_{deg}"
+        if inp_deg_area == deg:
             instance[this_key] = [1]
         else:
             instance[this_key] = [0]
