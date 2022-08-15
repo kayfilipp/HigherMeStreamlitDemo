@@ -15,6 +15,11 @@ DATA_FILE_NAME = 'census_data/data.csv'
 
 #allocates random forest model to session state.
 def main(st):
+
+    #let the user know we're loading RF
+    intro_screen = st.empty()
+    intro_screen.text("Loading Random Forest Model...")
+
     try:
         st.session_state['model_rf']
         logging.info('session state contains random forest model.')
@@ -41,6 +46,8 @@ def main(st):
             # save RF model to session state to avoid reloading every time we open.
             st.session_state['model_rf'] = model_rf
             del model_rf
+    finally:
+        intro_screen.empty()
 
 #loads data.csv - used for selection boxes and dummification, etc.
 #workflow

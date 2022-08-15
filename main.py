@@ -6,14 +6,10 @@ import modeling_utils
 st.header("HigherME Stem Placement Prediction App")
 st.write("This MVP provides demo functionality to see if an individual is likely to land a job in a STEM field.")
 
-intro_screen = st.empty()
-intro_screen.text("Loading Random Forest Model...")
-
 #see modeling_utils.py => check our session state for an RF model and reload it if we're missing one.
 #this reduces processing time.
 modeling_utils.main(st)
 
-intro_screen.empty()
 
 #load data.csv
 modeling_utils.main_data(st)
@@ -31,9 +27,6 @@ degree_areas = list(degree_areas)
 
 if st.checkbox('Show Training Dataframe sample'):
     st.session_state['data'][0:10]
-
-# load model - Random Forest
-deployed_svm_model = 0
 
 st.subheader("Please select relevant features for your individual.")
 left_column, right_column = st.columns(2)
