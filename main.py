@@ -1,10 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from io import BytesIO
-import pickle
-import requests
-import rf_load
+import modeling_utils
 
 st.header("HigherME Stem Placement Prediction App")
 st.write("This MVP provides demo functionality to see if an individual is likely to land a job in a STEM field.")
@@ -12,14 +9,14 @@ st.write("This MVP provides demo functionality to see if an individual is likely
 intro_screen = st.empty()
 intro_screen.text("Loading Random Forest Model...")
 
-#see rf_load.py => check our session state for an RF model and reload it if we're missing one.
+#see modeling_utils.py => check our session state for an RF model and reload it if we're missing one.
 #this reduces processing time.
-rf_load.main(st)
+modeling_utils.main(st)
 
 intro_screen.empty()
 
 #load data.csv
-rf_load.main_data(st)
+modeling_utils.main_data(st)
 mu = st.session_state['data']["AGE"].mean()
 sigma = st.session_state['data']["AGE"].std()
 
@@ -81,10 +78,7 @@ with right_column:
 
 
 
-def converter_func(radio):
-    if radio=='yes' or radio=='Female':
-        return 1
-    return 0
+
 
 inp_age = st.slider(
     'Age (Yrs)'
@@ -101,13 +95,15 @@ if st.button('Make Prediction'):
     instance = {}
 
     #binarize all other inputs
-    instance["SEX"] = [converter_func(inp_sex)]
+    instance["SEX"] = [modeling_utils.converter_func(inp_sex)]
+
     #Scale age
     inp_age = (inp_age - mu) / sigma
+
     instance["AGE"] = [inp_age]
-    instance["domestic_born"] = [converter_func(inp_domestic_born)]
-    instance["is_STEM_degree"] = [converter_func(inp_is_STEM)]
-    instance["under_represented"] = [converter_func(inp_under_represented)]
+    instance["domestic_born"] = [modeling_utils.converter_func(inp_domestic_born)]
+    instance["is_STEM_degree"] = [modeling_utils.converter_func(inp_is_STEM)]
+    instance["under_represented"] = [modeling_utils.converter_func(inp_under_represented)]
 
 
     #Dummies for degree area

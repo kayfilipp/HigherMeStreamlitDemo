@@ -5,14 +5,15 @@ import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 import pandas as pd
 
-PICKLE_FILE_NAME = 'rf_model.pkl'
-DATA_FILE_NAME = 'data.csv'
+PICKLE_FILE_NAME = 'model/rf_model.pkl'
+DATA_FILE_NAME = 'census_data/data.csv'
 
 #workflow:
 # 1. check if session state contains a random forest model.
 # 2. if not, try to load from a pickle file.
 # 3. if pickle file is not available, load from github.
 
+#allocates random forest model to session state.
 def main(st):
     try:
         st.session_state['model_rf']
@@ -47,6 +48,7 @@ def main(st):
 # 2. check local dir
 # 3. check github, save to local
 
+#stores data.csv in session state
 def main_data(st):
     try:
         st.session_state['data']
@@ -54,7 +56,7 @@ def main_data(st):
     except:
         logging.info('session does not contain data.csv. pulling...')
         try:
-            st.session_state['data'] = pd.read_csv('data.csv')
+            st.session_state['data'] = pd.read_csv('census_data/data.csv')
             logging.info('loaded data.csv from directory and saved to session')
         except:
             data = pd.read_csv("https://raw.githubusercontent.com/kayfilipp/HigherME/main/census_data/streamlit/data.csv")
@@ -65,3 +67,9 @@ def main_data(st):
             st.session_state['data'] = data
             del data
 
+
+#used to convert radio inputs for sex, is_stem, birthplace, racial group
+def converter_func(radio):
+    if radio=='yes' or radio=='Female':
+        return 1
+    return 0
